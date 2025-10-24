@@ -1,15 +1,43 @@
 import { csvParse, autoType } from "d3-dsv";
+import { ppd } from "./make-points";
 
-const makeUrl = (year) => `https://www.nomisweb.co.uk/api/v01/dataset/NM_2002_1.data.csv?geography=TYPE424&date=${year}&gender=0&c_age=200&measures=20100&select=geography_code,obs_value`;
-const cols = ["areacd", "value"];
-// "age=0,24,22,25";
-
-export default async function getData(year = "latest") {
-  const url = makeUrl(year);
-  const res = await fetch(url);
-  const str = (await res.text()).replace(/.*(?=\n)/, cols.join(","));
-  const rows = csvParse(str, autoType);
+function makeLookup(rows) {
   const lkp = {};
-  for (const row of rows) lkp[row.areacd] = row.value;
-  return lkp;
+  for (const row of rows) {
+    if (!row.value) continue;
+        lkp[row.areacd] = {
+        areacd: row.areacd,
+        total: row.value,
+        counts: ppd.map(p => Math.round(row.value / p))
+      };
+    }
+  return { lookup: lkp };
+}
+
+function pivotData(rows) {
+  if (rows.columns.length === 2) return makeLookup(rows);
+
+  const lkp = {};
+  const cats = new Set();
+  for (const row of rows) {
+    if (!row.value) continue;
+    if (!lkp[row.areacd]) lkp[row.areacd] = {areacd: row.areacd, total: 0, breaks: []};
+    if (lkp[row.areacd].total !== 0) lkp[row.areacd].breaks.push(lkp[row.areacd].total);
+    lkp[row.areacd][row.category] = row.value;
+    lkp[row.areacd].total += row.value;
+    cats.add(row.category);
+  }
+  for (const cd of Object.keys(lkp)) {
+    lkp[cd].breaks = lkp[cd].breaks.map(brk => brk / lkp[cd].total);
+    lkp[cd].counts = ppd.map(p => Math.round(lkp[cd].total / p));
+  };
+  return { lookup: lkp, categories: [...cats] };
+}
+
+export default async function getData(key, resolve) {
+  const path = resolve(`./data/${key}.csv`);
+  console.log(`Loading data from ${path}`)
+  const res = await fetch(path);
+  const rows = csvParse(await res.text(), autoType);
+  return {key, ...pivotData(rows)};
 }

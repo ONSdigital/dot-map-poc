@@ -1,97 +1,131 @@
 import { quadtree } from "d3-quadtree";
-import bbox from "@turf/bbox";
-import inPoly from "@turf/boolean-point-in-polygon";
-import { randomPoint } from "@turf/random";
+import pointInPolygon from "point-in-polygon-hao";
+import { colors } from "./config.js";
 
 export const ppd = [200000, 100000, 50000, 20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
 const lookup = {};
 
-function quadtreeToPoints(points, count) {
-  return points.slice(0, count || undefined).map(d => ({type: "Point", coordinates: d}));
+function getColor(value, breaks) {
+  for (let i = 0; i < breaks.length; i ++) {
+    if (value < breaks[i]) return colors[i];
+  }
+  return colors[breaks.length];
 }
 
-export default function makeAllPoints(data, features, codes, zoom = 0) {
+function addColors(array, count, countsByZoom, breaks) {
+  if (!breaks) {
+    for (let i = array.length; i < count; i ++) array.push(colors[0]);
+    return;
+  }
+
+  countsByZoom = [0, ...countsByZoom];
+  const firstIndex = countsByZoom.indexOf(array.length);
+  const lastIndex = countsByZoom.indexOf(count);
+  const counts = [];
+  for (let i = firstIndex; i < lastIndex; i ++) counts.push(countsByZoom[i + 1] - countsByZoom[i]);
+
+  for (const ct of counts) {
+    const newColors = Array(ct).keys().map(i => getColor(i / ct, breaks));
+    for (const color of newColors) array.push(color);
+  }
+}
+
+function shuffle(array) {
+  var n = array.length, t, i;
+  while (n) {
+    i = Math.random() * n-- | 0; // 0 ≤ i < n
+    t = array[n];
+    array[n] = array[i];
+    array[i] = t;
+  }
+  return array;
+}
+
+function coordsToFeatures(points, colors, count) {
+  const pts = count ? points.slice(0, count) : points;
+  return pts.map((d, i) => ({
+    type: "Feature",
+    geometry: {type: "Point", coordinates: d},
+    properties: {color: colors[i]}
+  }));
+}
+
+export default function makePoints(data, features, codes, zoom = 0) {
+  console.log("updating points");
+
   const points = [];
-  const ratio = (ppd[zoom] || 1);
 
   for (const cd of codes) {
+    if (!data.lookup[cd]) continue;
     const feature = features[cd];
     let pts = lookup[cd];
     if (!pts) {
-      const bb = bbox(feature);
-      lookup[cd] = pts = {bb, qt: quadtree().extent([[bb[0], bb[1]], [bb[2], bb[3]]]), pts: []};
+      const bb = feature.bbox;
+      lookup[cd] = pts = {qt: quadtree().extent([[bb[0], bb[1]], [bb[2], bb[3]]]), array: [], colors: [], activeKey: data.key};
     }
 
-    const count = Math.round(data[cd] / ratio);
-    const size = pts.qt.size();
-    // console.log({size, count});
-    const geoms = size >= count ? quadtreeToPoints(pts.pts, count) : quadtreeToPoints(addPoints(pts.qt, pts.pts, pts.bb, feature, count));
+    // Purge colours if dataset changes
+    if (pts.activeKey !== data.key) pts.colors = [];
+    pts.activeKey = data.key;
+
+    const count = data.lookup[cd].counts[zoom] || data.lookup[cd].counts.slice(-1)[0];
+    if (pts.qt.size() < count) addPoints(pts.qt, pts.array, feature.bbox, feature, count);
+    if (pts.colors.length < count) addColors(pts.colors, count, data.lookup[cd].counts, data.lookup[cd].breaks);
+
+    const geoms = coordsToFeatures(pts.array, pts.colors, count);
     for (const geom of geoms) points.push(geom);
   }
   console.log({points});
-  return { type: "GeometryCollection", geometries: points };
+  return { type: "FeatureCollection", features: shuffle(points) };
 }
 
-export function addPoints(qt, pts, bb, poly, count, numCandidates = 5) {
+export function addPoints(qt, pts, bbox, feature, count, numCandidates = 5) {
+  const poly = feature.geometry.type === "Polygon" ? [feature.geometry.coordinates] : feature.geometry.coordinates;
+
   if (qt.size() === 0) {
-    const pt = randomPoints(1, poly, bb)[0].geometry.coordinates;
+    const pt = randomPointPoly(poly, bbox);
     qt.add(pt);
     pts.push(pt);
   }
   for (let i = qt.size(); i < count; i ++) {
-    let bestCandidate, bestCoords, bestDistance = 0;
-    const candidates = randomPoints(numCandidates, poly, bb);
-    for (const cd of candidates) {
-      var c = cd.geometry.coordinates, // New candidate point
-          d = relDistance(qt.find(...c), c); // Distance from closest point
+    let bestCoords, bestDistance = 0;
+    const candidates = randomPoints(numCandidates, poly, bbox);
+    for (const c of candidates) { // New candidate point
+      const d = relDistance(qt.find(...c), c); // Distance from closest point
       if (d > bestDistance) {
         bestDistance = d;
-        bestCandidate = cd;
         bestCoords = c;
       }
     }
     qt.add(bestCoords);
     pts.push(bestCoords);
   }
-  return pts;
 }
 
-export function makePoints(poly, count, numCandidates = 10) {
-	const bb = bbox(poly);
-	const points = randomPoints(1, poly, bb); // First point
-	const qt = quadtree()
-		.extent([[bb[0], bb[1]], [bb[2], bb[3]]])
-		.add(points[0].geometry.coordinates);
-	
-	while (points.length < count) {
-		points.push(sample(qt, poly, bb, numCandidates));
-	}
-	return points;
+function randomPointBbox(bbox) {
+  return [
+    Math.random() * (bbox[2] - bbox[0]) + bbox[0],
+    Math.random() * (bbox[3] - bbox[1]) + bbox[1],
+  ];
+}
+
+function isInPoly(point, poly) {
+  for (let i = 0; i < poly.length; i ++) {
+    const test = pointInPolygon(point, poly[i]);
+    if (test) return true;
+  }
+  return false;
+}
+
+function randomPointPoly(poly, bbox) {
+  while (true) {
+    const point = randomPointBbox(bbox);
+    if (isInPoly(point, poly)) return point;
+  }
 }
 
 function randomPoints(count, poly, bbox) {
-	const points = [];
-	while (points.length < count) {
-		const pts = randomPoint(count - points.length, {bbox}).features;
-		points.push(...pts.filter(pt => inPoly(pt, poly)));
-	}
-	return points;
-}
-
-function sample(qt, poly, bbox, numCandidates) {
-  let bestCandidate, bestCoords, bestDistance = 0;
-	const candidates = randomPoints(numCandidates, poly, bbox);
-  for (const cd of candidates) {
-    var c = cd.geometry.coordinates, // New candidate point
-        d = relDistance(qt.find(...c), c); // Distance from closest point
-    if (d > bestDistance) {
-      bestDistance = d;
-      bestCandidate = cd;
-			bestCoords = c;
-    }
-  }
-	qt.add(bestCoords);
-  return bestCandidate;
+  return Array(count).fill().map(i => randomPointPoly(poly, bbox));
 }
 
 function relDistance(a, b) {
