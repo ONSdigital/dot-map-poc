@@ -86,7 +86,7 @@
 
 <Section marginTop>
   <Notice>
-    This interactive map uses dots to represent the population of UK local authorities based on ONS mid-year population estimates from 1994 to 2024. Select an dataset, year or area to explore the data.
+    This interactive map uses dots to represent the population of UK local authorities based on <a href="https://www.nomisweb.co.uk/query/construct/summary.asp?mode=construct&version=0&dataset=2002" target="_blank">ONS mid-year population estimates</a> from 1994 to 2024. Select an dataset, year or area to explore the data.
   </Notice>
   
 </Section>
