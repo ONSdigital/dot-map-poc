@@ -6,4 +6,4 @@ export const variants = [
   {key: "pop-sex", label: "Population by sex", age: "200", sex: "1,2", cat_col: "gender_name"}
 ];
 
-export const colors = ["rgb(39, 160, 204)", "rgb(246, 96, 104)", "rgb(0, 60, 87)"];
+export const colors = ["#27a0cc", "#fbb03b", "#f66068"];

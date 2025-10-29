@@ -2,7 +2,7 @@ import { quadtree } from "d3-quadtree";
 import pointInPolygon from "point-in-polygon-hao";
 import { colors } from "./config.js";
 
-export const ppd = [200000, 100000, 50000, 20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
+export const ppd = [500000, 200000, 100000, 50000, 20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
 const lookup = {};
 
 function getColor(value, breaks) {
@@ -68,14 +68,13 @@ export default function makePoints(data, features, codes, zoom = 0) {
     if (pts.activeKey !== data.key) pts.colors = [];
     pts.activeKey = data.key;
 
-    const count = data.lookup[cd].counts[zoom] || data.lookup[cd].counts.slice(-1)[0];
+    const count = data.lookup[cd].counts[zoom] || 0;
     if (pts.qt.size() < count) addPoints(pts.qt, pts.array, feature.bbox, feature, count);
     if (pts.colors.length < count) addColors(pts.colors, count, data.lookup[cd].counts, data.lookup[cd].breaks);
 
     const geoms = coordsToFeatures(pts.array, pts.colors, count);
     for (const geom of geoms) points.push(geom);
   }
-  console.log({points});
   return { type: "FeatureCollection", features: shuffle(points) };
 }
 

@@ -25,7 +25,7 @@
       >
     </div>
     <div class="ons-u-fs-s">
-      1 dot represents {zoom.toLocaleString("en-GB")}
+      1 point represents {zoom.toLocaleString("en-GB")}
       {zoom === 1 ? "person" : "people"}
     </div>
   </div>
@@ -112,7 +112,7 @@
     width: 4px;
     top: 0;
     left: 2px;
-    background: black;
+    background: white;
   }
   .footnote {
     position: relative;

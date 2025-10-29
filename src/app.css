@@ -1,7 +1,34 @@
 /* Use this file for app specific CSS and overrides */
 .placeholder {
-		background: var(--ons-color-grey-10);
-		padding: 12px;
-		height: 300px;
-    width: 100%;
-	}
+  background: var(--ons-color-grey-10);
+  padding: 12px;
+  height: 300px;
+  width: 100%;
+}
+
+.ons-phase-banner {
+	background: none;
+}
+
+.ons-icon {
+	fill: var(--ons-color-text) !important;
+}
+
+.ons-phase-banner__badge {
+	color: black;
+	background: white;
+}
+
+.ons-input {
+	background-color: var(--ons-color-bg);
+	border-color: var(--ons-color-text);
+}
+
+.ons-input--select {
+	background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11.75 7.7'%3E%3Cpath fill='white' d='m1.37.15 4.5 5.1 4.5-5.1a.37.37 0 0 1 .6 0l.7.7a.45.45 0 0 1 0 .5l-5.5 6.2a.37.37 0 0 1-.6 0l-5.5-6.1a.64.64 0 0 1 0-.6l.7-.7a.64.64 0 0 1 .6 0Z'/%3E%3C/svg%3E") no-repeat center right 10px;
+	background-size: 1rem;
+}
+
+.autocomplete__dropdown-arrow-down {
+	color: #333 !important;
+}
