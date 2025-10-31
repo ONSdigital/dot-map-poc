@@ -44,7 +44,7 @@
   let points = $derived.by(() =>
     dataLookup
       ? makePoints(dataLookup, geoLookup, Array.from(geoCodes), mapZoom)
-      : null
+      : null,
   );
   // let points = $state(null);
 
@@ -76,7 +76,7 @@
 
   $effect(
     async () =>
-      (dataLookup = await fetchData(`${variant.key}_${year}`, resolve))
+      (dataLookup = await fetchData(`${variant.key}_${year}`, resolve)),
   );
 
   $inspect(dataLookup);
@@ -146,6 +146,7 @@
       <Map
         style={mapStyle}
         location={{ bounds: mapBounds }}
+        options={{ cooperativeGestures: true }}
         minzoom={3}
         maxzoom={15}
         bind:map
