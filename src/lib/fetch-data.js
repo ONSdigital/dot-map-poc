@@ -19,19 +19,23 @@ function pivotData(rows) {
 
   const lkp = {};
   const cats = new Set();
+  const domain = [0, 0];
   for (const row of rows) {
     if (!row.value) continue;
-    if (!lkp[row.areacd]) lkp[row.areacd] = {areacd: row.areacd, total: 0, breaks: []};
+    if (!lkp[row.areacd]) lkp[row.areacd] = {areacd: row.areacd, total: 0, breaks: [], maxValue: 0};
     if (lkp[row.areacd].total !== 0) lkp[row.areacd].breaks.push(lkp[row.areacd].total);
     lkp[row.areacd][row.category] = row.value;
     lkp[row.areacd].total += row.value;
+    if (row.value > lkp[row.areacd].maxValue) lkp[row.areacd].maxValue = row.value;
     cats.add(row.category);
   }
   for (const cd of Object.keys(lkp)) {
     lkp[cd].breaks = lkp[cd].breaks.map(brk => brk / lkp[cd].total);
     lkp[cd].counts = ppd.map(p => Math.round(lkp[cd].total / p));
+    lkp[cd].maxValue  = lkp[cd].maxValue / lkp[cd].total;
+    if (lkp[cd].maxValue > domain[1]) domain[1] = lkp[cd].maxValue;
   };
-  return { lookup: lkp, categories: [...cats] };
+  return { lookup: lkp, categories: [...cats], domain };
 }
 
 export default async function getData(key, resolve) {

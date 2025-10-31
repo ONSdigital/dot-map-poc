@@ -29,6 +29,15 @@
 	background-size: 1rem;
 }
 
+.ons-input--select option {
+	background: #222;
+	color: var(--ons-color-text);
+}
+
 .autocomplete__dropdown-arrow-down {
-	color: #333 !important;
+	color: #222 !important;
+}
+
+.maplibregl-popup {
+	color: #222;
 }

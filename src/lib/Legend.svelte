@@ -10,6 +10,9 @@
     if (!areaData) return null;
     return (areaData[cat] / areaData.total) * 100;
   }
+  function xScale(percent) {
+    return percent / data.domain[1];
+  }
 </script>
 
 <div class="legend-container">
@@ -42,13 +45,13 @@
                 <div
                   class="bar"
                   style:background={colors[i]}
-                  style:width="{activePerc || comparatorPerc}%"
+                  style:width="{xScale(activePerc || comparatorPerc)}%"
                 >
                   {(activePerc || comparatorPerc).toFixed(1)}%
                 </div>
                 <div
                   class="marker"
-                  style:left="calc({comparatorPerc}% - 2px)"
+                  style:left="calc({xScale(comparatorPerc)}% - 2px)"
                 ></div>
               </td>
             </tr>
@@ -87,7 +90,6 @@
     flex-grow: 1;
   }
   .bars-container {
-    flex-grow: 1;
     width: 100%;
   }
   .bar-category {
